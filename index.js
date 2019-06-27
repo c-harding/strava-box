@@ -52,5 +52,9 @@ async function updateGist(body) {
 }
 
 (async () => {
-  await main();
+  try {
+    await main();
+  } catch (e) {
+    error(e);
+  }
 })();

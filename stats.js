@@ -216,6 +216,10 @@ function metersToKilometers(meters) {
 
 if (isMain)
   (async () => {
-    console.log(await main());
+    try {
+      console.log(await main());
+    } catch (e) {
+      error(e);
+    }
   })();
 else if (isNode) module.exports = main;
