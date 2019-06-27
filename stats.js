@@ -74,16 +74,14 @@ async function getFullStravaStats() {
       per_page: 200,
       page: i
     });
-  //const activities = [];
+
   const summary = {};
   let page,
     i = 1;
   do {
     page = await getPage(i++);
-    // activities.push(...page.map(
-    //   ({distance, moving_time: time, type}) => ({ distance, time, type }),
-    // ));
-    for (const { distance, moving_time: time, type } of page) {
+    for (const { distance, moving_time: time, type: rawType } of page) {
+      const type = groupType(rawType);
       const typeSummary = summary[type] || (summary[type] = {});
       typeSummary.count = 1 + (typeSummary.count || 0);
       typeSummary.time = time + (typeSummary.time || 0);
@@ -145,6 +143,17 @@ function generateBarChart(percent, size) {
   const full = "█";
   const barsFull = Math.round(size * (percent / 100));
   return full.repeat(barsFull).padEnd(size, empty);
+}
+
+function groupType(type) {
+  if (/ski$/i.test(type)) return "Ski";
+  if (/^virtual/i.test(type)) return test.replace(/^virtual/i, "");
+  return (
+    {
+      Walk: "Hike",
+      Snowshoe: "Hike"
+    }[type] || type
+  );
 }
 
 function renameType(type) {
