@@ -1,6 +1,8 @@
+#!/usr/bin/env node
+
 require("dotenv").config();
+const getStats = require("./stats");
 const Octokit = require("@octokit/rest");
-const fetch = require("node-fetch");
 
 const {
   GIST_ID: gistId,
@@ -15,85 +17,22 @@ const octokit = new Octokit({
 });
 
 async function main() {
-  const stats = await getStravaStats();
-  await updateGist(stats);
+  const body = await getStats();
+  await updateGist(body);
 }
 
-/**
- * Fetches your data from the Strava API
- * The distance returned by the API is in meters
- */
-async function getStravaStats() {
-  const API_BASE = "https://www.strava.com/api/v3/athletes/";
-  const API = `${API_BASE}${stravaAtheleteId}/stats?access_token=${stravaAccessToken}`;
-
-  const data = await fetch(API);
-  const json = await data.json();
-
-  return json;
+function error(...message) {
+  console.error(...message);
+  process.exit(1);
 }
 
-async function updateGist(data) {
+async function updateGist(body) {
   let gist;
   try {
     gist = await octokit.gists.get({ gist_id: gistId });
-  } catch (error) {
-    console.error(`Unable to get gist\n${error}`);
+  } catch (e) {
+    error("Unable to get gist", e);
   }
-
-  // Used to index the API response
-  const keyMappings = {
-    Running: {
-      key: "ytd_run_totals"
-    },
-    Swimming: {
-      key: "ytd_swim_totals"
-    },
-    Biking: {
-      key: "ytd_ride_totals"
-    }
-  };
-
-  let totalDistance = 0;
-
-  // Store the activity name and distance
-  let activities = Object.keys(keyMappings).map(activityType => {
-    const { key } = keyMappings[activityType];
-    const { distance } = data[key];
-
-    totalDistance += distance;
-
-    return {
-      name: activityType,
-      distance
-    };
-  });
-
-  // Calculate the percentages and bar charts for the 3 activities
-  activities = activities.map(activity => {
-    const percent = (activity["distance"] / totalDistance) * 100;
-    return {
-      ...activity,
-      percent: percent.toFixed(1),
-      barChart: generateBarChart(percent, 35)
-    };
-  });
-
-  // Append and/or convert the distance units
-  activities = activities.map(activity => {
-    return {
-      ...activity,
-      distance: formatDistance(activity["distance"])
-    };
-  });
-
-  // Format the data to be displayed in the Gist
-  const lines = activities.map(activity => {
-    const { name, distance, percent, barChart } = activity;
-    return `${name.padEnd(10)} ${distance.padEnd(
-      10
-    )} ${barChart} ${percent.padStart(5)}%`;
-  });
 
   try {
     // Get original filename to update that same file
@@ -102,38 +41,14 @@ async function updateGist(data) {
       gist_id: gistId,
       files: {
         [filename]: {
-          filename: `YTD Strava Metrics`,
-          content: lines.join("\n")
+          filename: "YTD Strava Metrics",
+          content: body
         }
       }
     });
-  } catch (error) {
-    console.error(`Unable to update gist\n${error}`);
+  } catch (e) {
+    error("Unable to update gist", e);
   }
-}
-
-function generateBarChart(percent, size) {
-  const empty = "░";
-  const full = "█";
-  const barsFull = Math.round(size * (percent / 100));
-  return full.repeat(barsFull).padEnd(size, empty);
-}
-
-function formatDistance(distance) {
-  const trimmedDistance = parseFloat(distance).toFixed(2);
-  switch (units) {
-    case "meters":
-      return `${trimmedDistance} m`;
-    case "miles":
-      return `${metersToMiles(distance)} mi`;
-    default:
-      return `${trimmedDistance} m`;
-  }
-}
-
-function metersToMiles(meters) {
-  const CONVERSION_CONSTANT = 0.000621371192;
-  return (meters * CONVERSION_CONSTANT).toFixed(2);
 }
 
 (async () => {
