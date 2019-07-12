@@ -3,14 +3,9 @@
 require("dotenv").config();
 const getStats = require("./stats");
 const Octokit = require("@octokit/rest");
+const error = require("./error");
 
-const {
-  GIST_ID: gistId,
-  GITHUB_TOKEN: githubToken,
-  STRAVA_ATHLETE_ID: stravaAtheleteId,
-  STRAVA_ACCESS_TOKEN: stravaAccessToken,
-  UNITS: units
-} = process.env;
+const { GIST_ID: gistId, GITHUB_TOKEN: githubToken } = process.env;
 
 const octokit = new Octokit({
   auth: `token ${githubToken}`
@@ -19,11 +14,6 @@ const octokit = new Octokit({
 async function main() {
   const body = await getStats();
   await updateGist(body);
-}
-
-function error(...message) {
-  console.error(...message);
-  process.exit(1);
 }
 
 async function updateGist(body) {

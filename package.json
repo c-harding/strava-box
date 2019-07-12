@@ -7,12 +7,15 @@
   "dependencies": {
     "@octokit/rest": "^16.28.2",
     "dotenv": "^8.0.0",
-    "node-fetch": "^2.6.0"
+    "node-fetch": "^2.6.0",
+    "nodegit": "^0.24.3"
   },
   "devDependencies": {
     "husky": "^2.4.1",
+    "moment": "^2.24.0",
     "prettier": "^1.18.2",
-    "pretty-quick": "^1.11.1"
+    "pretty-quick": "^1.11.1",
+    "shelljs": "^0.8.3"
   },
   "husky": {
     "hooks": {

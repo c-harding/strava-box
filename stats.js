@@ -3,24 +3,18 @@
 require("dotenv").config();
 const Octokit = require("@octokit/rest");
 const fetch = require("node-fetch");
+const moment = require("moment");
+const error = require("./error");
 
-const {
-  STRAVA_ATHLETE_ID: stravaAtheleteId,
-  STRAVA_ACCESS_TOKEN: stravaAccessToken,
-  UNITS: units
-} = process.env;
+const { STRAVA_ACCESS_TOKEN: stravaAccessToken, UNITS: units } = process.env;
 
 const isNode = typeof module !== "undefined";
 const isMain = isNode && !module.parent;
 
-function error(...message) {
-  console.error(...message);
-  process.exit(1);
-}
-
-async function main() {
-  const stats = await yearToDate();
-  return await prepareOutput(stats);
+async function main(steps) {
+  const stats = await yearToDate(steps);
+  const output = await Promise.all(stats.map(stat => stat.prepareOutput()));
+  return steps ? output : output[0];
 }
 
 async function stravaAPI(endpoint, query = {}) {
@@ -38,36 +32,79 @@ async function stravaAPI(endpoint, query = {}) {
   return json;
 }
 
-/**
- * Fetches your data from the Strava API
- * The distance returned by the API is in meters
- */
-async function getStravaStats() {
-  const stats = await stravaAPI(`/athletes/${stravaAtheleteId}/stats`);
-  const keyMappings = {
-    Run: {
-      key: "ytd_run_totals"
-    },
-    Swim: {
-      key: "ytd_swim_totals"
-    },
-    Ride: {
-      key: "ytd_ride_totals"
-    }
-  };
+class Summary {
+  constructor({ stats } = {}) {
+    this.stats = Object.assign({}, stats) || {};
+  }
+  add(type, activityTime, activityDistance, date) {
+    this.date = date;
+    const { count = 0, time = 0, distance = 0 } = this.stats[type] || {};
+    this.stats[type] = {
+      count: count + 1,
+      time: time + activityTime,
+      distance: distance + activityDistance
+    };
+    return this;
+  }
+  getTotalTime() {
+    return Object.values(this.stats).reduce((a, b) => a + b.time, 0);
+  }
+  getActivities() {
+    return Object.entries(this.stats).map(([type, sums]) => ({
+      type,
+      ...sums
+    }));
+  }
 
-  return Object.entries(keyMappings).map(([type, { key }]) => {
-    const { distance, moving_time: time, count } = stats[key];
+  async prepareOutput() {
+    const totalTime = this.getTotalTime();
 
-    return { type, count, distance, time };
-  });
+    // Store the activity name and distance
+    const activities = this.getActivities()
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3)
+      .map(activity => ({
+        ...activity,
+        percent: (activity.time / totalTime) * 100
+      }));
+
+    // Format the data to be displayed in the Gist
+    return Object.assign(
+      formatTable(activities, [
+        { key: "type", transform: renameType },
+        { key: "distance", align: "right", transform: formatDistance },
+        { key: "time", transform: formatTime },
+        { key: "percent", transform: percent => generateBarChart(percent, 28) }
+        // { key: "percent", align: "right", transform: formatPercentage },
+      ]),
+      { date: this.date }
+    );
+  }
+}
+
+function Summaries(steps = false) {
+  steps = !!steps;
+  let summaries = [];
+
+  const getSummary = () => summaries[summaries.length - 1];
+  const getSummaries = () => summaries;
+
+  const updateSummary = f =>
+    steps ? summaries.push(f(getSummary())) : (summaries = [f(getSummary())]);
+
+  const push = (type, time, distance, date) =>
+    updateSummary(summary =>
+      new Summary(summary).add(type, time, distance, date)
+    );
+
+  Object.assign(this, { push, getSummary, getSummaries });
 }
 
 /**
  * Fetches your data from the Strava API
  * The distance returned by the API is in meters
  */
-async function getFullStravaStats() {
+async function getFullStravaStats(steps = false) {
   const getPage = async i =>
     stravaAPI(`/athlete/activities`, {
       after: new Date(new Date().getFullYear(), 0, 1) / 1000,
@@ -75,46 +112,29 @@ async function getFullStravaStats() {
       page: i
     });
 
-  const summary = {};
+  const summaries = new Summaries(steps);
   let page,
     i = 1;
   do {
     page = await getPage(i++);
-    for (const { distance, moving_time: time, type: rawType } of page) {
+    for (const {
+      distance,
+      moving_time: time,
+      elapsed_time: duration,
+      type: rawType,
+      start_date: startDate
+    } of page) {
       const type = groupType(rawType);
-      const typeSummary = summary[type] || (summary[type] = {});
-      typeSummary.count = 1 + (typeSummary.count || 0);
-      typeSummary.time = time + (typeSummary.time || 0);
-      typeSummary.distance = distance + (typeSummary.distance || 0);
+      const endDate = moment(startDate).add(duration, "seconds");
+      summaries.push(type, time, distance, endDate);
     }
   } while (page.length);
 
-  return Object.entries(summary).map(([type, sums]) => ({ type, ...sums }));
+  return summaries.getSummaries();
 }
 
-async function yearToDate() {
-  const stats = await getFullStravaStats();
-  let totalTime = Object.values(stats).reduce((a, b) => a + b.time, 0);
-
-  // Store the activity name and distance
-  return stats
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 3)
-    .map(activity => ({
-      ...activity,
-      percent: (activity.time / totalTime) * 100
-    }));
-}
-
-async function prepareOutput(activities) {
-  // Format the data to be displayed in the Gist
-  return formatTable(activities, [
-    { key: "type", transform: renameType },
-    { key: "distance", align: "right", transform: formatDistance },
-    { key: "time", transform: formatTime },
-    { key: "percent", transform: percent => generateBarChart(percent, 28) }
-    // { key: "percent", align: "right", transform: formatPercentage },
-  ]);
+async function yearToDate(steps = false) {
+  return await getFullStravaStats(steps);
 }
 
 function formatTable(rows, columns, sep = "  ") {
