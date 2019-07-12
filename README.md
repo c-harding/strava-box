@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="400" src="https://i.imgur.com/v8XouyY.png">
+  <img width="400" src="https://i.imgur.com/oVlFAGG.png">
   <h3 align="center">strava-box</h3>
   <p align="center">Update a gist to contain your YTD Strava distances</p>
 </p>
