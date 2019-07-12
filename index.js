@@ -36,12 +36,12 @@ async function updateGist(body) {
 
   try {
     // Get original filename to update that same file
-    const filename = Object.keys(gist.data.files)[0];
+    const filename = Object.keys(gist.data.files).sort()[0];
+    if (gist.data.files[filename].content == body) return;
     await octokit.gists.update({
       gist_id: gistId,
       files: {
         [filename]: {
-          filename: "YTD Strava Metrics",
           content: body
         }
       }
