@@ -85,7 +85,7 @@ async function rawStravaAPI(endpoint, query = {}) {
 async function stravaAPI(endpoint, query = {}) {
   let data = await rawStravaAPI(endpoint, query);
   if (data.status == 401) {
-    await createServer();
+    await getAccessTokenFromBrowser();
     let data = await rawStravaAPI(endpoint, query);
   }
   const json = await data.json();
