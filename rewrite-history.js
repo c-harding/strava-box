@@ -11,7 +11,6 @@ if (!shell.which("git")) error("git not found");
 const filename = "YTD Strava Stats";
 
 async function main(dir) {
-  const file = path.join(dir, filename);
   if (!dir) error("No path to gist repository given");
   try {
     let stat = await fs.lstat(dir);
@@ -20,10 +19,12 @@ async function main(dir) {
     error("Invalid path to gist repository");
   }
 
-  const stats = await getStats(true);
+  const stats = (await getStats(true)).filter(stat =>
+    stat.date.isAfter("2019-10-13T20:00:21+00:00")
+  );
   shell.cd(path.resolve(dir));
   for (const stat of stats) {
-    await fs.writeFile(filename, stat);
+    await fs.writeFile(filename, stat.toString());
     shell.exec(`git add "${filename}"`);
     shell.exec(
       `GIT_AUTHOR_DATE="${stat.date.toISOString()}" git commit --allow-empty-message -m ''`

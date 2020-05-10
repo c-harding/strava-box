@@ -7,6 +7,7 @@
   "dependencies": {
     "@octokit/rest": "^16.28.2",
     "dotenv": "^8.0.0",
+    "find-free-port": "^2.0.0",
     "node-fetch": "^2.6.0",
     "nodegit": "^0.24.3"
   },
