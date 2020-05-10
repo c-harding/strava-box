@@ -74,7 +74,10 @@ class Summary {
         { key: "type", transform: renameType },
         { key: "distance", align: "right", transform: formatDistance },
         { key: "time", transform: formatTime },
-        { key: "percent", transform: percent => generateBarChart(percent, 28) }
+        {
+          key: "percent",
+          transform: percent => generateBarChart(percent, 28)
+        }
         // { key: "percent", align: "right", transform: formatPercentage },
       ]),
       { date: this.date }
