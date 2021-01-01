@@ -28,7 +28,8 @@ async function updateGist(body) {
     // Get original filename to update that same file
     const filename = Object.keys(gist.data.files).sort()[0];
 
-    if (body === "") {
+    // If the string does not contain anything other than whitespace
+    if (!/\S/.test(body)) {
       body = `No activities yet for ${Date().getFullYear()}, showing ${Date().getFullYear() - 1}\n`;
       body += gist.data.files[filename].content;
     }
