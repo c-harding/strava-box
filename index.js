@@ -27,6 +27,11 @@ async function updateGist(body) {
   try {
     // Get original filename to update that same file
     const filename = Object.keys(gist.data.files).sort()[0];
+
+    if (body === "") {
+      body = `No activities yet for ${Date().getFullYear()}, showing ${Date().getFullYear() - 1}\n`;
+      body += gist.data.files[filename].content;
+    }
     if (gist.data.files[filename].content == body) return;
     await octokit.gists.update({
       gist_id: gistId,
