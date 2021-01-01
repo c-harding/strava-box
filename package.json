@@ -4,12 +4,14 @@
   "description": "🏃‍♂️🏃‍♀️ Update a gist to contain your weekly Strava distances",
   "author": "John Pham <john@pham.codes>",
   "license": "ISC",
+  "scripts": {
+    "pretty": "pretty-quick --staged"
+  },
   "dependencies": {
     "@octokit/rest": "^16.28.2",
     "dotenv": "^8.0.0",
     "find-free-port": "^2.0.0",
-    "node-fetch": "^2.6.0",
-    "nodegit": "^0.24.3"
+    "node-fetch": "^2.6.0"
   },
   "devDependencies": {
     "husky": "^2.4.1",
@@ -20,7 +22,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "pretty-quick --staged"
+      "pre-commit": "npm run pretty"
     }
   }
 }
