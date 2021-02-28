@@ -1,24 +1,27 @@
 #!/usr/bin/env node
 
 require("dotenv").config();
-const moment = require("moment");
+const { DateTime } = require("luxon");
 const error = require("./error");
 const { stravaAPI } = require("./strava-api");
 
 const { UNITS: units } = process.env;
 
-async function main(steps = false) {
-  const stats = await yearToDate(steps);
+async function main(steps = false, startDate = undefined) {
+  const stats = await getFullStravaStats(steps, startDate);
   const output = await Promise.all(stats.map((stat) => stat.prepareOutput()));
   return steps ? output : output[0] ?? "";
 }
 
 class Summary {
-  constructor({ stats } = {}) {
+  constructor({ stats, year } = {}) {
+    this.year = year || NaN;
     this.stats = Object.assign({}, stats) || {};
   }
   add(type, activityTime, activityDistance, date) {
     this.date = date;
+    if (date.year !== this.year) this.stats = {};
+    this.year = date.year;
     const { count = 0, time = 0, distance = 0 } = this.stats[type] || {};
     this.stats[type] = {
       count: count + 1,
@@ -66,27 +69,34 @@ class Summary {
   }
 }
 
-function Summaries(steps = false) {
-  steps = !!steps;
-  let summaries = [];
+class Summaries {
+  constructor(steps = false) {
+    this.steps = !!steps;
+    this.summaries = [];
+  }
 
-  const getSummary = () => summaries[summaries.length - 1];
-  const getSummaries = () => summaries;
+  getSummary() {
+    return this.summaries[this.summaries.length - 1];
+  }
+  getSummaries() {
+    return this.summaries;
+  }
 
-  const updateSummary = (f) =>
-    steps ? summaries.push(f(getSummary())) : (summaries = [f(getSummary())]);
+  updateSummary(f) {
+    if (this.steps) this.summaries.push(f(this.getSummary()));
+    else this.summaries = [f(this.getSummary())];
+  }
 
-  const push = (type, time, distance, date) =>
-    updateSummary((summary) =>
+  push(type, time, distance, date) {
+    this.updateSummary((summary) =>
       new Summary(summary).add(type, time, distance, date)
     );
-
-  Object.assign(this, { push, getSummary, getSummaries });
+  }
 }
 
-async function getPage(i) {
+async function getPage(i, startDate = undefined) {
   return stravaAPI(`/athlete/activities`, {
-    after: new Date(new Date().getFullYear(), 0, 1) / 1000,
+    after: (startDate || DateTime.now()).startOf("year").toSeconds(),
     per_page: 200,
     page: i,
   });
@@ -96,30 +106,28 @@ async function getPage(i) {
  * Fetches your data from the Strava API
  * The distance returned by the API is in meters
  */
-async function getFullStravaStats(steps = false) {
+async function getFullStravaStats(steps = false, startDate = undefined) {
   const summaries = new Summaries(steps);
-  let page,
-    i = 1;
+  let page;
+  let i = 1;
   do {
-    page = await getPage(i++);
+    page = await getPage(i++, startDate);
     for (const {
       distance,
       moving_time: time,
       elapsed_time: duration,
       type: rawType,
-      start_date: startDate,
+      start_date: activityStart,
     } of page) {
       const type = groupType(rawType);
-      const endDate = moment(startDate).add(duration, "seconds");
+      const endDate = DateTime.fromISO(activityStart).plus({
+        seconds: duration,
+      });
       summaries.push(type, time, distance, endDate);
     }
   } while (page.length);
 
   return summaries.getSummaries();
-}
-
-async function yearToDate(steps = false) {
-  return await getFullStravaStats(steps);
 }
 
 function formatTable(rows, columns, sep = "  ") {

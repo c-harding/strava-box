@@ -86,7 +86,6 @@ async function stravaAPI(endpoint, query = {}) {
     data = await rawStravaAPI(endpoint, query);
   }
   const json = await data.json();
-
   return json;
 }
 

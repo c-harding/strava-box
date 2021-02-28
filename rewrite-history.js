@@ -6,6 +6,8 @@ const error = require("./error");
 const fs = require("fs").promises;
 const path = require("path");
 const shell = require("shelljs");
+const { DateTime } = require("luxon");
+
 if (!shell.which("git")) error("git not found");
 
 const filename = "YTD Strava Stats";
@@ -19,15 +21,14 @@ async function main(dir) {
     error("Invalid path to gist repository");
   }
 
-  const stats = (await getStats(true)).filter(stat =>
-    stat.date.isAfter("2019-10-13T20:00:21+00:00")
-  );
+  const startDate = DateTime.fromISO("2017-01-01T00:00:00Z");
+  const stats = await getStats(true, startDate);
   shell.cd(path.resolve(dir));
   for (const stat of stats) {
     await fs.writeFile(filename, stat.toString());
     shell.exec(`git add "${filename}"`);
     shell.exec(
-      `GIT_AUTHOR_DATE="${stat.date.toISOString()}" git commit --allow-empty-message -m ''`
+      `GIT_AUTHOR_DATE="${stat.date.toISO()}" git commit --allow-empty-message -m ''`
     );
   }
 }

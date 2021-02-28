@@ -11,12 +11,12 @@
     "@octokit/rest": "^18.3.0",
     "dotenv": "^8.2.0",
     "find-free-port": "^2.0.0",
+    "luxon": "^1.26.0",
     "node-fetch": "^2.6.1"
   },
   "devDependencies": {
     "eslint": "^7.21.0",
     "husky": "^5.1.1",
-    "moment": "^2.29.1",
     "prettier": "^2.2.1",
     "pretty-quick": "^3.1.0",
     "shelljs": "^0.8.4"
