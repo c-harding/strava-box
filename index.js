@@ -2,13 +2,13 @@
 
 require("dotenv").config();
 const getStats = require("./stats");
-const Octokit = require("@octokit/rest");
+const { Octokit } = require("@octokit/rest");
 const error = require("./error");
 
 const { GIST_ID: gistId, GITHUB_TOKEN: githubToken } = process.env;
 
 const octokit = new Octokit({
-  auth: `token ${githubToken}`
+  auth: `token ${githubToken}`,
 });
 
 async function main() {
@@ -30,8 +30,9 @@ async function updateGist(body) {
 
     // If the string does not contain anything other than whitespace
     if (!/\S/.test(body)) {
-      body = `No activities yet for ${new Date().getFullYear()}, showing ${new Date().getFullYear() -
-        1}\n`;
+      body = `No activities yet for ${new Date().getFullYear()}, showing ${
+        new Date().getFullYear() - 1
+      }\n`;
       body += gist.data.files[filename].content;
     }
     if (gist.data.files[filename].content == body) return;
@@ -39,9 +40,9 @@ async function updateGist(body) {
       gist_id: gistId,
       files: {
         [filename]: {
-          content: body
-        }
-      }
+          content: body,
+        },
+      },
     });
   } catch (e) {
     error("Unable to update gist", e);
