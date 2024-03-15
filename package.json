@@ -12,7 +12,7 @@
     "dotenv": "^8.2.0",
     "find-free-port": "^2.0.0",
     "luxon": "^1.26.0",
-    "strava": "c-harding/strava#access-token-param"
+    "strava": "^2.3.0"
   },
   "devDependencies": {
     "eslint": "^7.21.0",
