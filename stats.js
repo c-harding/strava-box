@@ -3,7 +3,7 @@
 require("dotenv").config();
 const { DateTime } = require("luxon");
 const error = require("./error");
-const { stravaAPI } = require("./strava-api");
+const { getStrava } = require("./strava-api");
 
 const { UNITS: units } = process.env;
 
@@ -94,24 +94,25 @@ class Summaries {
   }
 }
 
-async function getPage(i, startDate = undefined) {
-  return stravaAPI(`/athlete/activities`, {
-    after: (startDate || DateTime.now()).startOf("year").toSeconds(),
-    per_page: 200,
-    page: i,
-  });
-}
-
 /**
  * Fetches your data from the Strava API
  * The distance returned by the API is in meters
  */
-async function getFullStravaStats(steps = false, startDate = undefined) {
+async function getFullStravaStats(
+  steps = false,
+  /** @type {DateTime?} */ startDate = undefined
+) {
+  const strava = await getStrava();
   const summaries = new Summaries(steps);
   let page;
   let i = 1;
+  let after = (startDate || DateTime.now()).startOf("year").toSeconds();
   do {
-    page = await getPage(i++, startDate);
+    page = await strava.activities.getLoggedInAthleteActivities({
+      after,
+      per_page: 200,
+      page: i++,
+    });
     for (const {
       distance,
       moving_time: time,
@@ -157,11 +158,11 @@ function generateBarChart(percent, size) {
   const frac = Math.floor((size * 8 * percent) / 100);
   const barsFull = Math.floor(frac / 8);
   if (barsFull >= size) {
-    return syms.substring(8, 9).repeat(size);
+    return syms[8].repeat(size);
   }
   const semi = frac % 8;
 
-  return [syms.substring(8, 9).repeat(barsFull), syms.substring(semi, semi + 1)]
+  return [syms[8].repeat(barsFull), syms.substring(semi, semi + 1)]
     .join("")
     .padEnd(size, syms.substring(0, 1));
 }
@@ -241,7 +242,11 @@ if (module.parent) {
     try {
       console.log((await main()).toString());
     } catch (e) {
-      error(e);
+      error(
+        "Fatal error:",
+        e,
+        ...(e?.json ? ["with response body", await e?.json?.()] : [])
+      );
     }
   })();
 }
