@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Restore npm cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: dependency-cache-${{ hashFiles('package.json') }}
           path: node_modules
@@ -26,12 +26,12 @@ jobs:
           node-version: 20
       - run: npm ci
       - name: Save npm cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: node_modules
           key: dependency-cache-${{ hashFiles('package.json') }}
       - name: restore_cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: strava-auth-${{ github.run_id }}
           path: strava-auth.json
@@ -48,7 +48,7 @@ jobs:
           STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
           UNITS: ${{ vars.UNITS }}
       - name: save_cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: strava-auth.json
           key: strava-auth-${{ github.run_id }}
