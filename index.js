@@ -16,7 +16,7 @@ async function main() {
   await updateGist(body);
 }
 
-async function updateGist(body) {
+async function updateGist(/** @type {string} */ body) {
   let gist;
   try {
     gist = await octokit.gists.get({ gist_id: gistId });
@@ -27,13 +27,14 @@ async function updateGist(body) {
   try {
     // Get original filename to update that same file
     const filename = Object.keys(gist.data.files).sort()[0];
+    const existingBody = gist.data.files[filename].content;
 
     // If the string does not contain anything other than whitespace
     if (!/\S/.test(body)) {
       body = `No activities yet for ${new Date().getFullYear()}, showing ${
         new Date().getFullYear() - 1
       }\n`;
-      body += gist.data.files[filename].content;
+      if (!existingBody.startsWith(body)) body += existingBody;
     }
     if (gist.data.files[filename].content == body) return;
     await octokit.gists.update({
