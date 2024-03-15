@@ -5,10 +5,10 @@ const getStats = require("./stats");
 const { Octokit } = require("@octokit/rest");
 const error = require("./error");
 
-const { GIST_ID: gistId, GITHUB_TOKEN: githubToken } = process.env;
+const { GIST_ID: gistId, GIST_TOKEN: gistToken } = process.env;
 
 const octokit = new Octokit({
-  auth: `token ${githubToken}`,
+  auth: `token ${gistToken}`,
 });
 
 async function main() {

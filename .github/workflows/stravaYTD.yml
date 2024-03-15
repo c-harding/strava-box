@@ -1,0 +1,54 @@
+name: c-harding/strava-box/stravaYTD
+on:
+  push:
+    branches:
+      - main
+      - workflow/*
+  schedule:
+    - cron: "*/15 * * * *"
+
+jobs:
+  stravaYTD:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore npm cache
+        uses: actions/cache@v3
+        with:
+          key: dependency-cache-${{ hashFiles('package.json') }}
+          path: node_modules
+          restore-keys: |-
+            dependency-cache-${{ hashFiles('package.json') }}
+            dependency-cache-
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - name: Save npm cache
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: dependency-cache-${{ hashFiles('package.json') }}
+      - name: restore_cache
+        uses: actions/cache@v3
+        with:
+          key: strava-auth-${{ github.run_id }}
+          path: strava-auth.json
+          restore-keys: |-
+            strava-auth-
+      - name: index.js
+        run: node index.js
+        env:
+          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+          GIST_ID: ${{ vars.GIST_ID }}
+          STRAVA_ATHLETE_ID: ${{ secrets.STRAVA_ATHLETE_ID }}
+          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
+          UNITS: ${{ vars.UNITS }}
+      - name: save_cache
+        uses: actions/cache@v3
+        with:
+          path: strava-auth.json
+          key: strava-auth-${{ github.run_id }}
