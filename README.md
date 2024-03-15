@@ -23,17 +23,14 @@ This repo is based off of [matchai's waka-box](https://github.com/matchai/waka-b
 ### Project setup
 
 1. Fork this repo
-2. Get the *refresh token*:
+2. Get the _refresh token_:
    1. Clone this repo locally
    2. Make a copy of `sample.env` called `.env`, and add all the tokens/IDs requested (see environment variables section below), excluding the refresh token.
    3. Run `npm install` to install the necessary dependencies to run the project.
    4. Run `./strava-api.js`, open the link provided, and click to authorize the app.
    5. The refresh token will be printed to your terminal.
-3. Log into CircleCI with your GitHub (<https://circleci.com/vcs-authorize/>)
-4. Click on "Add Projects" on the sidebar
-5. Set up a project with the newly created fork
-6. Go to Project Settings > Environment Variables
-7. Add the following environment variables:
+3. Open the repository settings in GitHub, and open the page Security › Secrets and Variables › Actions.
+4. Add the following repository secrets:
 
 ### Environment variables
 
