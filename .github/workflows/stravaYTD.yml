@@ -6,6 +6,13 @@ on:
       - workflow/*
   schedule:
     - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      skip-cache:
+        description: Skip cache, use environment variable for refresh token
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   stravaYTD:
@@ -38,7 +45,8 @@ jobs:
           restore-keys: |-
             strava-auth-
       - name: index.js
-        run: node index.js
+        run: >
+          node index.js ${{ github.event.inputs.skip-cache == 'true' && '--no-cache' || '' }}
         env:
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
           GIST_ID: ${{ vars.GIST_ID }}

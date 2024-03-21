@@ -32,7 +32,7 @@ function loadCache() {
 }
 
 async function getStrava() {
-  const cache = loadCache();
+  const cache = process.argv.includes("--no-cache") ? undefined : loadCache();
 
   const saveToken = (/** @type {import('strava').AccessToken} */ cache) =>
     fs.writeFileSync(AUTH_CACHE_FILE, JSON.stringify(cache));
